@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Image → Video</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #0f1115;
+    color: #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 60px;
+    min-height: 100vh;
+  }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; text-align: center; }
+  p.sub { color: #9aa0a6; font-size: 0.9rem; margin-top: 0; text-align: center; max-width: 420px; }
+  .card {
+    background: #1a1d24;
+    border-radius: 16px;
+    padding: 20px;
+    width: 100%;
+    max-width: 420px;
+    margin-top: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  label { font-size: 0.85rem; color: #c8ccd1; display: block; margin-bottom: 6px; }
+  input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    background: #24272f;
+    border-radius: 10px;
+    border: 1px dashed #444;
+    color: #ddd;
+    margin-bottom: 14px;
+  }
+  input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid #333;
+    background: #24272f;
+    color: #eee;
+    margin-bottom: 14px;
+  }
+  img#preview {
+    width: 100%;
+    border-radius: 12px;
+    margin-bottom: 14px;
+    display: none;
+  }
+  button {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(135deg,#7f5af0,#2cb67d);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; }
+  #status {
+    text-align: center;
+    margin-top: 14px;
+    font-size: 0.9rem;
+    color: #9aa0a6;
+    min-height: 20px;
+  }
+  video {
+    width: 100%;
+    border-radius: 12px;
+    margin-top: 16px;
+    display: none;
+  }
+  a#downloadLink {
+    display: none;
+    text-align: center;
+    margin-top: 10px;
+    color: #7f5af0;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .note {
+    font-size: 0.75rem;
+    color: #666;
+    margin-top: 20px;
+    text-align: center;
+    max-width: 380px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Image → Video</h1>
+<p class="sub">Upload a photo, add a short motion prompt, and turn it into a video — free, powered by a public AI model.</p>
+
+<div class="card">
+  <label for="imageInput">1. Choose an image</label>
+  <input type="file" id="imageInput" accept="image/*" />
+  <img id="preview" />
+
+  <label for="promptInput">2. Describe the motion (optional)</label>
+  <input type="text" id="promptInput" placeholder="e.g. gentle wind blowing, camera slowly zooms in" />
+
+  <button id="generateBtn">Generate Video</button>
+  <div id="status"></div>
+
+  <video id="resultVideo" controls></video>
+  <a id="downloadLink">Download video</a>
+</div>
+
+<p class="note">
+  This uses a free public Hugging Face Space (Wan2.1) to generate the video.
+  Since it's shared and free, it may take a minute or two, and can be busy at peak times.
+</p>
+
+<script type="module">
+  import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
+
+  const imageInput = document.getElementById("imageInput");
+  const preview = document.getElementById("preview");
+  const promptInput = document.getElementById("promptInput");
+  const generateBtn = document.getElementById("generateBtn");
+  const statusEl = document.getElementById("status");
+  const resultVideo = document.getElementById("resultVideo");
+  const downloadLink = document.getElementById("downloadLink");
+
+  let selectedFile = null;
+
+  imageInput.addEventListener("change", () => {
+    const file = imageInput.files[0];
+    if (!file) return;
+    selectedFile = file;
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
+  });
+
+  generateBtn.addEventListener("click", async () => {
+    if (!selectedFile) {
+      statusEl.textContent = "Please choose an image first.";
+      return;
+    }
+
+    generateBtn.disabled = true;
+    resultVideo.style.display = "none";
+    downloadLink.style.display = "none";
+    statusEl.textContent = "Connecting to the free AI model...";
+
+    try {
+      // Public free Space: turns a still image into a short video
+      const client = await Client.connect("multimodalart/wan2-1-fast");
+
+      statusEl.textContent = "Uploading your image...";
+
+      const result = await client.predict("/generate_video", {
+        input_image: selectedFile,
+        prompt: promptInput.value || "subtle natural motion, cinematic",
+        height: 480,
+        width: 832,
+        negative_prompt: "blurry, distorted, low quality, extra limbs, watermark",
+        duration_seconds: 2,
+        guidance_scale: 1,
+        steps: 4,
+        seed: 42,
+        randomize_seed: true,
+      });
+
+      statusEl.textContent = "Generating video... this can take 1-3 minutes on the free queue.";
+
+      // result.data[0] is the output video, result.data[1] is the seed used
+      const videoData = result.data[0];
+      const videoUrl = videoData.video ? videoData.video.url : videoData.url || videoData;
+
+      resultVideo.src = videoUrl;
+      resultVideo.style.display = "block";
+      downloadLink.href = videoUrl;
+      downloadLink.download = "generated-video.mp4";
+      downloadLink.style.display = "block";
+      statusEl.textContent = "Done! Your video is ready below.";
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent =
+        "Something went wrong (the free space may be busy or its inputs changed). Try again in a bit.";
+    } finally {
+      generateBtn.disabled = false;
+    }
+  });
+</script>
+
+</body>
+</html>
