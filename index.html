@@ -121,7 +121,7 @@
 </p>
 
 <script type="module">
-  import { Client } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
+  import { Client, handle_file } from "https://cdn.jsdelivr.net/npm/@gradio/client/dist/index.min.js";
 
   const imageInput = document.getElementById("imageInput");
   const preview = document.getElementById("preview");
@@ -159,7 +159,7 @@
       statusEl.textContent = "Uploading your image...";
 
       const result = await client.predict("/generate_video", {
-        input_image: selectedFile,
+        input_image: handle_file(selectedFile),
         prompt: promptInput.value || "subtle natural motion, cinematic",
         height: 480,
         width: 832,
@@ -186,7 +186,7 @@
     } catch (err) {
       console.error(err);
       statusEl.textContent =
-        "Something went wrong (the free space may be busy or its inputs changed). Try again in a bit.";
+        "Error: " + (err && err.message ? err.message : "something went wrong. Try again in a bit.");
     } finally {
       generateBtn.disabled = false;
     }
