@@ -108,6 +108,9 @@
   <label for="promptInput">2. Describe the motion (optional)</label>
   <input type="text" id="promptInput" placeholder="e.g. gentle wind blowing, camera slowly zooms in" />
 
+  <label for="tokenInput">3. Hugging Face token (optional, but recommended)</label>
+  <input type="text" id="tokenInput" placeholder="hf_... (free account = shorter wait)" />
+
   <button id="generateBtn">Generate Video</button>
   <div id="status"></div>
 
@@ -126,6 +129,7 @@
   const imageInput = document.getElementById("imageInput");
   const preview = document.getElementById("preview");
   const promptInput = document.getElementById("promptInput");
+  const tokenInput = document.getElementById("tokenInput");
   const generateBtn = document.getElementById("generateBtn");
   const statusEl = document.getElementById("status");
   const resultVideo = document.getElementById("resultVideo");
@@ -154,7 +158,10 @@
 
     try {
       // Public free Space: turns a still image into a short video
-      const client = await Client.connect("multimodalart/wan2-1-fast");
+      const token = tokenInput.value.trim();
+      const client = token
+        ? await Client.connect("multimodalart/wan2-1-fast", { hf_token: token })
+        : await Client.connect("multimodalart/wan2-1-fast");
 
       statusEl.textContent = "Uploading your image...";
 
