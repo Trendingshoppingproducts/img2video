@@ -112,7 +112,7 @@
   <input type="text" id="tokenInput" placeholder="hf_... (free account = shorter wait)" />
 
   <label for="durationInput">4. Video length (seconds)</label>
-  <input type="number" id="durationInput" min="1" max="5" step="1" value="4" />
+  <input type="number" id="durationInput" min="1" max="5" step="1" value="2" />
 
   <button id="generateBtn">Generate Video</button>
   <div id="status"></div>
@@ -172,12 +172,12 @@
       const result = await client.predict("/generate_video", {
         input_image: handle_file(selectedFile),
         prompt: promptInput.value || "subtle natural motion, cinematic",
-        height: 320,
-        width: 576,
-        negative_prompt: "blurry, distorted, low quality, extra limbs, watermark",
-        duration_seconds: parseFloat(durationInput.value) || 4,
+        height: 512,
+        width: 896,
+        negative_prompt: "Bright tones, overexposed, static, blurred details, subtitles, style, works, paintings, images, static, overall gray, worst quality, low quality, JPEG compression residue, ugly, incomplete, extra fingers, poorly drawn hands, poorly drawn faces, deformed, disfigured, misshapen limbs, fused fingers, still picture, cluttered background, three legs, many people in the background, walking backwards",
+        duration_seconds: parseFloat(durationInput.value) || 2,
         guidance_scale: 1,
-        steps: 6,
+        steps: 4,
         seed: 42,
         randomize_seed: true,
       });
