@@ -168,10 +168,10 @@
       const result = await client.predict("/generate_video", {
         input_image: handle_file(selectedFile),
         prompt: promptInput.value || "subtle natural motion, cinematic",
-        height: 480,
-        width: 832,
+        height: 320,
+        width: 576,
         negative_prompt: "blurry, distorted, low quality, extra limbs, watermark",
-        duration_seconds: 2,
+        duration_seconds: 1,
         guidance_scale: 1,
         steps: 4,
         seed: 42,
